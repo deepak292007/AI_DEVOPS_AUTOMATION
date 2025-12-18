@@ -1,0 +1,12 @@
+name: Build & Push Docker Image
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  foundation-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm workflow trigger
+        run: echo "GitHub Actions foundation is working"
