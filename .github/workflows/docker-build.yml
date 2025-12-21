@@ -1,12 +1,23 @@
-name: Build & Push Docker Image
+name: Build Docker Image
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  foundation-check:
+  docker-build:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Confirm workflow trigger
         run: echo "GitHub Actions foundation is working"
+
+      # ===== ROLE C: Docker Build Automation =====
+      - name: Build Docker Image
+        run: docker build -t chetanasivadurga/ai-devops:${{ github.run_number }} .
+
+      - name: Tag Docker Image as latest
+        run: docker tag chetanasivadurga/ai-devops:${{ github.run_number }} chetanasivadurga/ai-devops:latest
