@@ -1,0 +1,13 @@
+{
+  "name": "hanuman",
+  "version": "1.0.0",
+  "description": "AI DevOps Node.js application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
