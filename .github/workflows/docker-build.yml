@@ -22,3 +22,4 @@ jobs:
 
       - name: Tag Docker Image as latest
         run: docker tag chetanasivadurga/ai-devops:${{ github.run_number }} chetanasivadurga/ai-devops:latest
+
