@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "index.js"
+      - ".github/workflows/**"
 
 jobs:
   docker-build:
