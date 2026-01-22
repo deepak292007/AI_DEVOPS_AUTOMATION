@@ -50,4 +50,18 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push chetanasivadurga/ai-devops:${{ github.run_number }}
-          docker push chetanasivadurga/ai-devops:latest
+
+          docker push chetanasivadurga/ai-devops:latest 
+
+      # Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull chetanasivadurga/ai-devops:latest
+            docker stop ai-devops || true
+            docker rm ai-devops || true
+            docker run -d -p 3000:3000 --name ai-devops chetanasivadurga/ai-devops:latest
