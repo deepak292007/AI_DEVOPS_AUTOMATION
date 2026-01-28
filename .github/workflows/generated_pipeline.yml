@@ -4,50 +4,26 @@ on:
   push:
     branches:
       - main
-    paths:
-      - Dockerfile
-      - package.json
-      - package-lock.json
-      - index.js
-      - .github/workflows/**
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # 1. Take the code
+      - uses: actions/checkout@v3
 
-      - name: CI Build Validation
-        run: |
-          echo "CI pipeline is working"
-          ls -la
-
-      # Debug secrets presence (Validated by Role D)
-      - name: Debug Docker secrets
-        run: |
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then echo "DOCKER_USERNAME is EMPTY"; else echo "DOCKER_USERNAME exists"; fi
-          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then echo "DOCKER_PASSWORD is EMPTY"; else echo "DOCKER_PASSWORD exists"; fi
-
-      # Build Docker image
-      - name: Build Docker Image
-        run: |
-          docker build -t chetanasivadurga/ai-devops:${{ github.run_number }} .
-
-      # Tag image as latest
-      - name: Tag Docker Image as latest
-        run: |
-          docker tag chetanasivadurga/ai-devops:${{ github.run_number }} chetanasivadurga/ai-devops:latest
-
-      # Login using OFFICIAL Docker action (Important Fix from Role D)
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      # 2. Login to Docker Hub
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Push images
-      - name: Push Docker Image
-        run: |
+      # 3. Build Docker image (give number)
+      - run: docker build -t chetanasivadurga/ai-devops:${{ github.run_number }} .
+
+      # 4. Push to Docker Hub
+      - run: |
+          docker tag chetanasivadurga/ai-devops:${{ github.run_number }} chetanasivadurga/ai-devops:latest
           docker push chetanasivadurga/ai-devops:${{ github.run_number }}
           docker push chetanasivadurga/ai-devops:latest
