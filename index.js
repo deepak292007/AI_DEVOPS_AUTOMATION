@@ -8,18 +8,18 @@ const APP_VERSION = process.env.APP_VERSION || "local";
 // Home route
 app.get("/", (req, res) => {
   res.send(`
-    <h1>🚀 AI DevOps Automation</h1>
+    <h1>Hello from AI DevOps - Version 2 - Auto Deployment Test</h1>
     <p>Version: ${APP_VERSION}</p>
     <p>Status: Role B Ready</p>
   `);
 });
 
-// Health check
+// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
     status: "UP",
     version: APP_VERSION,
-    time: new Date().toISOString()
+    timestamp: new Date().toISOString()
   });
 });
 
