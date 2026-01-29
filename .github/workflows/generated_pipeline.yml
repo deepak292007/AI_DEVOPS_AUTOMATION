@@ -50,7 +50,6 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push chetanasivadurga/ai-devops:${{ github.run_number }}
-
           docker push chetanasivadurga/ai-devops:latest 
 
       # Deploy to EC2
