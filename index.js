@@ -13,7 +13,7 @@ app.get("/", (req, res) => {
     <p><b>Version:</b> ${APP_VERSION}</p>
     <p><b>Environment:</b> ${APP_VERSION}</p>
     <p><b>Deployed At:</b> ${new Date().toISOString()}</p>
-    <p><b>Status:</b> Role B Completed ✅</p>
+    <p><b>Status:</b> Role A Completed Version 3✅</p>
   `);
 });
 
