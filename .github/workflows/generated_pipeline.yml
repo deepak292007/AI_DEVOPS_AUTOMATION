@@ -1,4 +1,4 @@
-name: Build & Push Docker Image
+name: Build & Push to ACR
 
 on:
   push:
@@ -10,33 +10,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Take the code
+      # 1️⃣ Checkout Code
       - uses: actions/checkout@v3
 
-      # 2. Login to Docker Hub
-      - uses: docker/login-action@v3
+      # 2️⃣ Login to Azure Container Registry
+      - name: Login to ACR
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: venudadiprojectacr001.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      # 3. Build Docker image (give number)
-      - run: docker build -t chetanasivadurga/ai-devops:${{ github.run_number }} .
+      # 3️⃣ Build Docker Image
+      - name: Build Image
+        run: |
+          docker build -t venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} .
+          docker tag venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} venudadiprojectacr001.azurecr.io/ai-devops:latest
 
-      # 4. Push to Docker Hub
-      - run: |
-          docker tag chetanasivadurga/ai-devops:${{ github.run_number }} chetanasivadurga/ai-devops:latest
-          docker push chetanasivadurga/ai-devops:${{ github.run_number }}
-          docker push chetanasivadurga/ai-devops:latest 
-
-      # Deploy to EC2
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            docker pull chetanasivadurga/ai-devops:latest
-            docker stop ai-devops || true
-            docker rm ai-devops || true
-            docker run -d -p 3000:3000 --name ai-devops chetanasivadurga/ai-devops:latest
+      # 4️⃣ Push Image to ACR
+      - name: Push Image
+        run: |
+          docker push venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }}
+          docker push venudadiprojectacr001.azurecr.io/ai-devops:latest
