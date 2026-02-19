@@ -1,4 +1,4 @@
-name: Build & Push to ACR
+name: Build & Push to ACR (AI Assisted)
 
 on:
   push:
@@ -13,7 +13,29 @@ jobs:
       # 1️⃣ Checkout Code
       - uses: actions/checkout@v3
 
-      # 2️⃣ Login to Azure Container Registry
+      # 2️⃣ Set up Python (for AI step)
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      # 3️⃣ AI Risk Evaluation
+      - name: Calculate Deployment Risk
+        id: riskcheck
+        run: |
+          CHANGED_LINES=$(git diff --shortstat HEAD~1 | awk '{print $4}')
+     CHANGED_LINES=${CHANGED_LINES:-0}
+          echo "Lines changed: ${CHANGED_LINES:-0}"
+
+          RISK=$(python ai/risk_model.py ${CHANGED_LINES:-0})
+          echo "Risk score: $RISK"
+
+          if (( $(echo "$RISK > 0.7" | bc -l) )); then
+            echo "High risk deployment. Stopping pipeline."
+            exit 1
+          fi
+
+      # 4️⃣ Login to Azure Container Registry
       - name: Login to ACR
         uses: docker/login-action@v3
         with:
@@ -21,25 +43,36 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 3️⃣ Build Docker Image
+      # 5️⃣ Build Docker Image
       - name: Build Image
         run: |
           docker build -t venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} .
           docker tag venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} venudadiprojectacr001.azurecr.io/ai-devops:latest
 
-      # 4️⃣ Push Image to ACR
+      # 6️⃣ Push Image to ACR
       - name: Push Image
         run: |
           docker push venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }}
           docker push venudadiprojectacr001.azurecr.io/ai-devops:latest
 
-      # 5️⃣ Login to Azure
+      # 7️⃣ Login to Azure
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 6️⃣ Restart Azure Web App (Auto Deploy)
+      # 8️⃣ Update Web App Container
+      - name: Update Web App Container
+        run: |
+          az webapp config container set \
+            --name tf-ai-devops-app \
+            --resource-group ai-devops-rg \
+            --docker-custom-image-name venudadiprojectacr001.azurecr.io/ai-devops:latest \
+            --docker-registry-server-url https://venudadiprojectacr001.azurecr.io
+
+      # 9️⃣ Restart Azure Web App
       - name: Restart Azure Web App
         run: |
-          az webapp restart --name tf-ai-devops-app --resource-group ai-devops-rg
+          az webapp restart \
+            --name tf-ai-devops-app \
+            --resource-group ai-devops-rg
