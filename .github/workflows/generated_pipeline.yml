@@ -4,8 +4,11 @@ on:
   push:
     branches:
       - main
-#changed
-# 🔥 Fix GitHub 403 Push Error
+    # 🚫 Prevent infinite loop when GitHub Actions pushes commits
+    paths-ignore:
+      - 'ai/deployment_history.csv'
+      - 'ai/deployment_model.pkl'
+
 permissions:
   contents: write
 
@@ -18,7 +21,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: true
 
       # 2️⃣ Setup Python
@@ -35,7 +38,6 @@ jobs:
 
       # 4️⃣ Calculate Git Change Metrics
       - name: Extract Deployment Features
-        id: metrics
         run: |
           if git rev-parse HEAD~1 >/dev/null 2>&1; then
             LINES_CHANGED=$(git diff --shortstat HEAD~1 | awk '{print $4}')
@@ -60,7 +62,6 @@ jobs:
 
       # 5️⃣ AI Risk Evaluation
       - name: AI Risk Prediction
-        id: riskcheck
         run: |
           RISK=$(python ai/risk_model.py \
             $LINES_CHANGED \
@@ -107,7 +108,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 1️⃣1️⃣ Update Azure Web App (Modern + With ACR Credentials)
+      # 1️⃣1️⃣ Update Azure Web App
       - name: Update Azure Web App
         run: |
           az webapp config container set \
@@ -135,13 +136,15 @@ jobs:
             $CHURN_RATE \
             0
 
-      # 1️⃣4️⃣ Commit Updated Dataset
+      # 1️⃣4️⃣ Commit Updated Dataset (SAFE)
       - name: Commit Updated Dataset
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+
           git add ai/deployment_history.csv || true
           git add ai/deployment_model.pkl || true
           git commit -m "Auto-update deployment dataset" || echo "No changes to commit"
-          git push
 
+          git pull --rebase origin main
+          git push
