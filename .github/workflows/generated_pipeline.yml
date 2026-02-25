@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-    # 🚫 Prevent infinite loop when GitHub Actions pushes commits
     paths-ignore:
       - 'ai/deployment_history.csv'
       - 'ai/deployment_model.pkl'
@@ -17,26 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout Repository
+
+      # 1 Checkout Repository
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
-      # 2️⃣ Setup Python
+      # 2 Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3️⃣ Install AI Dependencies
+      # 3 Install AI Dependencies
       - name: Install AI Requirements
         run: |
           pip install --upgrade pip
           pip install -r ai/requirements.txt
 
-      # 4️⃣ Calculate Git Change Metrics
+      # 4 Extract Git Metrics
       - name: Extract Deployment Features
         run: |
           if git rev-parse HEAD~1 >/dev/null 2>&1; then
@@ -60,8 +60,9 @@ jobs:
           echo "COMMIT_MESSAGE_LENGTH=${COMMIT_MESSAGE_LENGTH:-0}" >> $GITHUB_ENV
           echo "CHURN_RATE=${CHURN_RATE:-0}" >> $GITHUB_ENV
 
-      # 5️⃣ AI Risk Evaluation
+      # 5 AI Risk Prediction
       - name: AI Risk Prediction
+        id: risk_step
         run: |
           RISK=$(python ai/risk_model.py \
             $LINES_CHANGED \
@@ -73,42 +74,62 @@ jobs:
           echo "RISK_SCORE=$RISK" >> $GITHUB_ENV
 
           if (( $(echo "$RISK > 0.7" | bc -l) )); then
-            echo "High risk deployment. Stopping pipeline."
+            echo "BLOCK_DEPLOYMENT=true" >> $GITHUB_ENV
+          else
+            echo "BLOCK_DEPLOYMENT=false" >> $GITHUB_ENV
           fi
 
-      # 6️⃣ Train Model
+      # 6 Train Model
       - name: Train ML Model
         run: |
           python ai/train_model.py
 
-      # 7️⃣ Login to Azure Container Registry
+      # 7 Stop Pipeline If High Risk
+      - name: Stop If High Risk
+        if: env.BLOCK_DEPLOYMENT == 'true'
+        run: |
+          echo "High risk deployment detected. Logging failure and stopping."
+          python ai/deployment_logger.py \
+            $LINES_CHANGED \
+            $FILES_CHANGED \
+            $COMMIT_MESSAGE_LENGTH \
+            $CHURN_RATE \
+            1
+          exit 1
+
+      # 8 Login to ACR
       - name: Login to ACR
+        if: env.BLOCK_DEPLOYMENT == 'false'
         uses: docker/login-action@v3
         with:
           registry: venudadiprojectacr001.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 8️⃣ Build Docker Image
+      # 9 Build Docker Image
       - name: Build Docker Image
+        if: env.BLOCK_DEPLOYMENT == 'false'
         run: |
           docker build -t venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} .
           docker tag venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }} venudadiprojectacr001.azurecr.io/ai-devops:latest
 
-      # 9️⃣ Push Docker Image
+      # 10 Push Docker Image
       - name: Push Docker Image
+        if: env.BLOCK_DEPLOYMENT == 'false'
         run: |
           docker push venudadiprojectacr001.azurecr.io/ai-devops:${{ github.run_number }}
           docker push venudadiprojectacr001.azurecr.io/ai-devops:latest
 
-      # 🔟 Azure Login
+      # 11 Azure Login
       - name: Azure Login
+        if: env.BLOCK_DEPLOYMENT == 'false'
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 1️⃣1️⃣ Update Azure Web App
+      # 12 Update Azure Web App
       - name: Update Azure Web App
+        if: env.BLOCK_DEPLOYMENT == 'false'
         run: |
           az webapp config container set \
             --name tf-ai-devops-app \
@@ -118,15 +139,17 @@ jobs:
             --container-registry-user ${{ secrets.ACR_USERNAME }} \
             --container-registry-password ${{ secrets.ACR_PASSWORD }}
 
-      # 1️⃣2️⃣ Restart Azure Web App
+      # 13 Restart Web App
       - name: Restart Web App
+        if: env.BLOCK_DEPLOYMENT == 'false'
         run: |
           az webapp restart \
             --name tf-ai-devops-app \
             --resource-group ai-devops-rg
 
-      # 1️⃣3️⃣ Log Deployment Outcome
-      - name: Log Deployment Outcome
+      # 14 Log Successful Deployment
+      - name: Log Successful Deployment
+        if: env.BLOCK_DEPLOYMENT == 'false'
         run: |
           python ai/deployment_logger.py \
             $LINES_CHANGED \
@@ -135,7 +158,7 @@ jobs:
             $CHURN_RATE \
             0
 
-      # 1️⃣4️⃣ Commit Updated Dataset (SAFE)
+      # 15 Commit Updated Dataset
       - name: Commit Updated Dataset
         run: |
           git config user.name "github-actions"
@@ -147,4 +170,3 @@ jobs:
 
           git pull --rebase origin main
           git push
-
