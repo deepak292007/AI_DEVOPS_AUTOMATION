@@ -1,17 +1,18 @@
 FROM node:20-alpine
 
-WORKDIR /my-app
+WORKDIR /app
 
-# Copy entire project
 COPY . .
 
-# Install everything using root controller
+# Install root deps (if any)
 RUN npm install
 
-# Build frontend if it exists
-RUN npm run build || echo "No client build step"
+# Install & build frontend
+RUN cd my-app/client && npm install && npm run build
+
+# Install server deps
+RUN cd my-app/server && npm install
 
 EXPOSE 3000
 
-
-CMD ["npm", "start"]
+CMD ["node", "my-app/server/index.js"]
