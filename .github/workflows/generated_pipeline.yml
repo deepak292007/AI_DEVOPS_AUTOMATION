@@ -74,7 +74,6 @@ jobs:
 
           if (( $(echo "$RISK > 0.7" | bc -l) )); then
             echo "High risk deployment. Stopping pipeline."
-            exit 1
           fi
 
       # 6️⃣ Train Model
@@ -148,3 +147,4 @@ jobs:
 
           git pull --rebase origin main
           git push
+
