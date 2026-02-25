@@ -1,6 +1,6 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /my-app
 
 # Copy entire project
 COPY . .
@@ -12,5 +12,6 @@ RUN npm install
 RUN npm run build || echo "No client build step"
 
 EXPOSE 3000
+
 
 CMD ["npm", "start"]
