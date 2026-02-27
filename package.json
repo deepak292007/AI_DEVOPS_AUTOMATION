@@ -2,7 +2,7 @@
   "name": "ai-devops-universal",
   "private": true,
   "scripts": {
-    "install": "if [ -d \"my-app/server\" ]; then npm install --prefix my-app/server; fi && if [ -d \"my-app/client\" ]; then npm install --prefix my-app/client; fi",
+    "install": "echo \"Root install skipped. Dependencies are handled per app.\"",
 
     "build": "if [ -d \"my-app/client\" ]; then npm run build --prefix my-app/client; else echo 'No client to build'; fi",
 
