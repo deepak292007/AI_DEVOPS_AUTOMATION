@@ -1,13 +1,14 @@
 {
-  "name": "hanuman",
-  "version": "1.0.0",
-  "description": "AI DevOps Node.js application",
-  "main": "index.js",
+  "name": "ai-devops-universal",
+  "private": true,
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"No tests yet\""
+    "install": "if [ -d \"my-app/server\" ]; then npm install --prefix my-app/server; fi && if [ -d \"my-app/client\" ]; then npm install --prefix my-app/client; fi",
+
+    "build": "if [ -d \"my-app/client\" ]; then npm run build --prefix my-app/client; else echo 'No client to build'; fi",
+
+    "start": "if [ -f \"my-app/server/index.js\" ]; then npm start --prefix my-app/server; elif [ -d \"my-app/client/build\" ]; then npx serve -s my-app/client/build -l 3000; else echo 'Nothing to start'; exit 1; fi"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "serve": "^14.2.0"
   }
 }
